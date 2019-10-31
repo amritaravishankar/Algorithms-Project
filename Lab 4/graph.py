@@ -1,70 +1,104 @@
-from collections import defaultdict
+import numpy as np
+import networkx as nx
+import matplotlib.pyplot as plt
 import random
+import time
+import math
 
+# Graphs are created using Python's default dictionary.
+
+from collections import defaultdict
 graph = defaultdict(list)
 
-def addEdge(graph,u,v):
-	graph[u].append(v)
+# Define the function to add edges to the graph:
+def addEdge(graph, u, v):
+    graph[u].append(v)
 
+city_list = ["Singapore", "Bombay", "Kuala Lumpur", "Jakarta", "Bangkok", "Beijing", "Shanghai", "Seoul",\
+             "Hong Kong", "Tokyo", "Sydney", "Perth", "New Zealand", "Washington D.C.", "New York", "Los Angeles",\
+             "Chicago", "Seattle", "Boston", "London", "Amsterdam", "Berlin", "Copenhagen", "Moscow",\
+             "Paris","Rome", "Toronto", "Cairo", "Istanbul", "Dubai", "Madrid", "Las Vegas",\
+             "Prague", "Budapest", "Munich", "Zurich", "Vancouver", "Melbourne", "Rio De Janeiro", "Frankfurt"]
 
-city_list = ["Bombay", "Singapore", "Kuala Lumpur", "Jakarta", "Bangkok", "Beijing", "Shanghai", "Seoul", "Hong Kong", "Tokyo", "Sydney", "Perth", "New Zealand", "Washington D.C.", "New York", "Los Angeles","Chicago", "Seattle", "Boston", "London", "Amsterdam", "Berlin", "Copenhagen", "Moscow", "Paris","Rome", "Toronto", "Cairo", "Istanbul", "Dubai", "Madrid", "Las Vegas", "Prague", "Budapest", "Munich", "Zurich", "Vancouver", "Melbourne", "Rio De Janeiro", "Frankfurt"]
-print(len(city_list))
-n = int(input("Enter number of cities(max 40): "))
+# The CreateGraph function creates a graph where non-stop flights (edges) are created between random cities (vertices):
+# The new city list contains the first 'n' cities from our full list of cities, n = no. of cities specified by user.
 
-print("\nList of Cities:")
-for i in range(n):
-    print(i+1 , city_list[i])
-
-#PROBLEM: loop condition must be until number of keys is not equal to number of cities wanted
-def CreateGraph(graph):
+def CreateGraph(graph, num_vertices, num_edges):
+    G = nx.Graph()
     x = 0
-    while x<=n:
-        city_list1 = city_list[:n]
+    # req_num_edges = math.floor(n * (n - 1) * 0.25)
+    while x <= num_edges:
+        city_list1 = city_list[ : num_vertices]
         u = random.choice(city_list1)
         v = random.choice(city_list1)
-        while(v==u):
+        G.add_node(u)
+        G.add_node(v)
+        
+        while(v == u):
             v = random.choice(city_list1)
+        
         if v not in graph[u]:
             addEdge(graph, u, v)
+            G.add_edge(u, v)
 
         if u not in graph[v]:
             addEdge(graph, v, u)
+            G.add_edge(v, u)
 
-        x+=1
+        x += 1
+    
+    print("Nodes of graph: ")
+    print(G.nodes())
+    print("Edges of graph: ")
+    print(G.edges())
+    nx.draw(G)
+    plt.savefig("simple_path.png") # save as png
+    plt.show()
+	
+# The following is the function for the BFS algorithm:
 
-CreateGraph(graph)
-#NEED A PRINT GRAPH FUNCTION
-print(graph)
-print(len(graph))
+def BFS(graph, source, destination):
+    marked_vertices = []    # Array of all marked vertices
+    queue = [[source]]      # Put source vertex into an empty Queue
 
-# finds shortest path between 2 nodes of a graph using BFS
-def bfs_shortest_path(graph, start, goal):
-    explored = []           # keep track of explored nodes
-    queue = [[start]]       # keep track of all the paths to be checked
+    if source == destination:
+        print("Source is same as Destination")
+        return
 
-    if start == goal:
-        return "That was easy! Start = goal"
-
-    while queue:                # keeps looping until all possible paths have been checked
-        path = queue.pop(0)     # pop the first path from the queue
-        node = path[-1]         # get the last node from the path
-        if node not in explored:
-            neighbours = graph[node]    # go through all neighbour nodes, construct a new path and push it into the queue
-            for neighbour in neighbours:
+    while queue:                # Loops while the Queue is not Empty
+        path = queue.pop(0)     
+        vertex = path[-1]  
+        if vertex not in marked_vertices:
+            neighbours = graph[vertex]    # For an unmarked vertex, the neighbouring vertices are now traversed through
+            for neighbour_vertex in neighbours:
                 new_path = list(path)
-                new_path.append(neighbour)
+                new_path.append(neighbour_vertex)
                 queue.append(new_path)
-                if neighbour == goal:           # return path if neighbour is goal
-                    return new_path
+                if neighbour_vertex == destination:
+                    return new_path       # This is the final path that is returned
 
-            #mark node as explored
-            explored.append(node)
+            # The vertex is now added (appended) to the array of marked vertices
+            marked_vertices.append(vertex)
 
-    #in case there's no path between the 2 nodes
-    return "Sorry, but a connecting path doesn't exist :("
+    
+    return "Error: Path does not exist for chosen source and destination."
 
-source = input("\nWhich city do you want to select as source?")
-destination = input("\nWhich city do you want to select as destination?")
-print("Shortest path: ", bfs_shortest_path(graph, source, destination))
+print("The length of our complete city list is: ", len(city_list))
+num_cities = int(input("Enter the number of cities you want to add to the graph (max 40): "))
+num_flights = int(input("Enter the number of flights you want to add: "))
 
-#GET CPU TIMES FOR DIFFERENT SIZES OF GRAPHS
+print("\nList of Cities:")
+for i in range(num_cities):
+    print(i + 1, city_list[i])
+
+CreateGraph(graph, num_cities, num_flights) # The graph is created.
+
+source = input("Which city do you want to select as source?\n")
+destination = input("\nWhich city do you want to select as destination?\n")
+
+start_time = time.time()
+answer = BFS(graph, source, destination)
+time_taken = (time.time() - start_time)
+
+print("\nShortest path: ", answer)
+print("\nCPU Time: ", time_taken * 1000, " milliseconds")
